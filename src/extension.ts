@@ -43,7 +43,10 @@ export function deactivate() {
  */
 async function updateStatusBarItem() {
 	try {
-		const dopplerConfig = await execShell('doppler configure --json');
+		if (!vscode.workspace.workspaceFolders?.[0]) {
+			return;
+		}
+		const dopplerConfig = await execShell("doppler configure --json");
 		const paths = Object.keys(JSON.parse(dopplerConfig));
 		// get most deeply nested path
 		const configForPath = JSON.parse(dopplerConfig)[paths.sort((p1, p2) => p2.split("/").length - p1.split("/").length)[0]] as { "enclave.config": string, "enclave.project": string };
@@ -156,7 +159,11 @@ async function checkIfDopplerIsInstalled() {
  */
 const execShell = (cmd: string) =>
 	new Promise<string>((resolve, reject) => {
-		cp.exec(cmd, (err, out) => {
+		if (!vscode.workspace.workspaceFolders?.[0]) {
+			reject('No workspace folder found.');
+			return;
+		}
+		cp.exec(`cd ${(vscode.workspace.workspaceFolders[0] as any).fsPath} && ${cmd}`, (err, out) => {
 			if (err) {
 				return reject(err);
 			}
