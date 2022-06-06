@@ -20,5 +20,5 @@ You have doppler successfully installed and are already signed in.
 
 ### 0.1.0
 
-Initial release of the extension. Only features changing the doppler env and project.
+Initial release of the extension. Only features are changing the doppler env and project.
 
