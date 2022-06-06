@@ -28,12 +28,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		context.subscriptions.push(change);
 	};
 
-	try {
-		await checkIfDopplerIsInstalled();
-		setupMainScripts();
-	} catch (e) {
-		setupDoppler();
-	}
+	setupMainScripts();
 
 	channel.appendLine("Doppler extension is active.");
 }
@@ -137,24 +132,6 @@ async function setupDopplerEnvironment() {
 		await execShell(`doppler setup -p ${project} -c ${selectedEnv} --no-interactive`);
 		vscode.window.showInformationMessage(`Doppler is configured for ${project} - ${selectedEnv}`);
 		updateStatusBarItem();
-	}
-}
-
-/**
- * Executes the scripts to install doppler and asks the user to sign in.
- */
-async function setupDoppler() {
-	vscode.window.showInformationMessage("Please install Doppler: https://docs.doppler.com/docs/install-cli");
-}
-
-/**
- * Command to check if doppler is installed.
- */
-async function checkIfDopplerIsInstalled() {
-	const dopplerVersion = await execShell('command -v doppler');
-	if (!dopplerVersion.includes('doppler')) {
-		vscode.window.showErrorMessage('Doppler not found. Please install doppler.');
-		throw new NoDopplerError();
 	}
 }
 

@@ -18,6 +18,11 @@ You have doppler successfully installed and are already signed in.
 
 ## Release Notes
 
+### 0.0.5
+
+Remove error message when doppler not installed.
+
+
 ### 0.0.4
 
 Fix workspace paths and event listeners.
