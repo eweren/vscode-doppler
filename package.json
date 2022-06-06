@@ -3,6 +3,10 @@
   "displayName": "Doppler",
   "description": "View and change your doppler environment within vscode",
   "version": "0.0.1",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/thearc-hq/vscode-doppler"
+		},
   "engines": {
     "vscode": "^1.67.0"
   },
