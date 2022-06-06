@@ -1,17 +1,24 @@
 import * as vscode from 'vscode';
 import * as cp from "child_process";
 
-let updateInterval: number | NodeJS.Timeout | undefined;
 const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+const channel = vscode.window.createOutputChannel("Doppler");
 
 export async function activate(context: vscode.ExtensionContext) {
 
 	item.accessibilityInformation = { label: 'Doppler extension' };
+
 	updateStatusBarItem();
 
-	updateInterval = setInterval(async () => {
-		await updateStatusBarItem();
-	}, 10000);
+	context.subscriptions.push(
+		vscode.window.onDidChangeActiveTextEditor(() => {
+			updateStatusBarItem();
+		})
+	);
+
+	context.subscriptions.push(vscode.window.onDidChangeWindowState(() => {
+		updateStatusBarItem();
+	}));
 
 	const setupMainScripts = () => {
 		const setup = vscode.commands.registerCommand('doppler.setup', async () => setupDopplerProject());
@@ -28,14 +35,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		setupDoppler();
 	}
 
-	console.log('Doppler initialized!');
-}
-
-// this method is called when your extension is deactivated
-export function deactivate() {
-	if (updateInterval) {
-		clearInterval(updateInterval);
-	}
+	channel.appendLine("Doppler extension is active.");
 }
 
 /**
@@ -47,23 +47,29 @@ async function updateStatusBarItem() {
 			return;
 		}
 		const dopplerConfig = await execShell("doppler configure --json");
+		channel.appendLine(`Found config: ${dopplerConfig}`);
 		const paths = Object.keys(JSON.parse(dopplerConfig));
 		// get most deeply nested path
 		const configForPath = JSON.parse(dopplerConfig)[paths.sort((p1, p2) => p2.split("/").length - p1.split("/").length)[0]] as { "enclave.config": string, "enclave.project": string };
 		if (!Object.keys(configForPath).includes("enclave.config")) {
-			throw new Error("No enclave.config found");
+			throw new NoEnclaveError("No enclave.config found");
 		}
 		item.command = 'doppler.change';
 		item.text = `$(magnet)  ${configForPath['enclave.config']}`;
 		item.tooltip = `Project: ${configForPath['enclave.project']}`;
 		item.show();
 	} catch (e) {
-		item.text = `Setup doppler`;
-		item.command = 'doppler.setup';
-		item.tooltip = `Currently not in a doppler scope. Click here to setup.`;
-		item.show();
-		vscode.window.showWarningMessage("The current workspace doesn't seem to be scoped to doppler.");
-		return;
+		if (e instanceof NoWorkspaceError) {
+			item.text = `Doppler`;
+			item.tooltip = `Currently not in a directory. Can't setup doppler.`;
+			item.show();
+			return;
+		} else if (e instanceof NoEnclaveError) {
+			item.text = `Setup doppler`;
+			item.command = 'doppler.setup';
+			item.tooltip = `Currently not in a doppler scope. Click here to setup.`;
+			item.show();
+		}
 	}
 }
 
@@ -148,7 +154,7 @@ async function checkIfDopplerIsInstalled() {
 	const dopplerVersion = await execShell('command -v doppler');
 	if (!dopplerVersion.includes('doppler')) {
 		vscode.window.showErrorMessage('Doppler not found. Please install doppler.');
-		throw new Error("Doppler not found.");
+		throw new NoDopplerError();
 	}
 }
 
@@ -159,14 +165,38 @@ async function checkIfDopplerIsInstalled() {
  */
 const execShell = (cmd: string) =>
 	new Promise<string>((resolve, reject) => {
-		if (!vscode.workspace.workspaceFolders?.[0]) {
+		if (!vscode.window.activeTextEditor?.document.uri) {
 			reject('No workspace folder found.');
 			return;
 		}
-		cp.exec(`cd ${(vscode.workspace.workspaceFolders[0] as any).fsPath} && ${cmd}`, (err, out) => {
+		cp.exec(`cd ${(getPath(vscode.window.activeTextEditor?.document.uri))} && ${cmd}`, (err, out) => {
 			if (err) {
 				return reject(err);
 			}
 			return resolve(out);
 		});
 	});
+
+const getPath = (resource: vscode.Uri) => {
+	let path: string | undefined;
+	if (!vscode.workspace.workspaceFolders) {
+		channel.appendLine(`No workspace folder found for ${resource.fsPath}`);
+		throw new NoWorkspaceError();
+	} else {
+		let root: vscode.WorkspaceFolder | undefined;
+		if (vscode.workspace.workspaceFolders.length === 1) {
+			root = vscode.workspace.workspaceFolders[0];
+		} else {
+			root = vscode.workspace.getWorkspaceFolder(resource);
+		}
+
+		path = root?.uri.fsPath;
+		channel.appendLine(`Root detected ${path}`);
+	}
+
+	return path;
+}
+
+class NoWorkspaceError extends Error { }
+class NoEnclaveError extends Error { }
+class NoDopplerError extends Error { }

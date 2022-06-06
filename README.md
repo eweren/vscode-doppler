@@ -1,4 +1,4 @@
-# DOPPLER VSCODE Extension
+# Unofficial DOPPLER VSCode Extension
 
 ![Demo](./demo.gif)
 
@@ -18,7 +18,22 @@ You have doppler successfully installed and are already signed in.
 
 ## Release Notes
 
-### 0.1.0
+### 0.0.4
+
+Fix workspace paths and event listeners.
+
+
+### 0.0.3
+
+Adjust readme.
+
+
+### 0.0.2
+
+Add image.
+
+
+### 0.0.1
 
 Initial release of the extension. Only features are changing the doppler env and project.
 
