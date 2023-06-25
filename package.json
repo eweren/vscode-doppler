@@ -40,8 +40,8 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@commitlint/cli": "17.0.0",
-    "@commitlint/config-conventional": "17.0.0",
+    "@commitlint/cli": "17.6.6",
+    "@commitlint/config-conventional": "17.6.6",
     "@types/glob": "7.2.0",
     "@types/mocha": "9.1.1",
     "@types/node": "16.x",
